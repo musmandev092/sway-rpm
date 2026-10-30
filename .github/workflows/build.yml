@@ -1,0 +1,55 @@
+name: build-sway
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the version is already published"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: build-sway
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch published repo (gh-pages)
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git clone --depth 1 --branch gh-pages "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" pages
+          else
+            mkdir pages
+          fi
+
+      - name: Rebuild wlroots and sway for Fedora 44
+        id: build
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          docker run --rm -e SIGNING_KEY -e FORCE -e GITHUB_OUTPUT=/work/gh_output \
+            -v "$PWD:/work" fedora:44 bash /work/build.sh
+          cat gh_output >> "$GITHUB_OUTPUT" 2>/dev/null || true
+
+      - name: Publish to gh-pages
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          sudo chown -R "$USER" pages
+          git config --global --add safe.directory '*'
+          cd pages
+          [ -d .git ] || git init -q -b gh-pages
+          touch .nojekyll
+          git config user.name "sway-rpm bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish $(cat state.txt)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:gh-pages
