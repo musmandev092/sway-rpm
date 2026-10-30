@@ -28,7 +28,7 @@ cp "$OUT"/x86_64/wlroots-[0-9]*.rpm "$OUT"/x86_64/sway-[0-9]*.rpm "$DEST"/
 export GNUPGHOME=$(mktemp -d); chmod 700 "$GNUPGHOME"
 printf '%s' "$SIGNING_KEY" | gpg --batch --import
 FPR=$(gpg --list-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
-rpmsign --define "_gpg_name $FPR" --define "__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --pinentry-mode loopback --no-secmem-warning -u %{_gpg_name} -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" --addsign "$DEST"/*.rpm
+rpmsign --define "_gpg_name $FPR" --define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --batch --passphrase ''" --addsign "$DEST"/*.rpm
 createrepo_c --update "$DEST"
 cp "$WORK/RPM-GPG-KEY-sway-rpm.asc" "$WORK/sway-rpm.repo" "$PAGES/"
 echo "$NEW" > "$PAGES/state.txt"
