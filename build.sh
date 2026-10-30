@@ -23,7 +23,7 @@ rpmbuild --rebuild --define "_rpmdir $OUT" "$S"
 
 DEST=$PAGES/fc44/x86_64
 rm -f "$DEST"/*.rpm
-cp "$OUT"/x86_64/wlroots-[0-9]*.rpm "$OUT"/x86_64/sway-[0-9]*.rpm "$DEST"/
+cp "$OUT"/x86_64/wlroots-[0-9]*.rpm "$OUT"/x86_64/sway-[0-9]*.rpm "$OUT"/noarch/sway-config-minimal-[0-9]*.rpm "$DEST"/
 
 export GNUPGHOME=$(mktemp -d); chmod 700 "$GNUPGHOME"
 printf '%s' "$SIGNING_KEY" | gpg --batch --import
